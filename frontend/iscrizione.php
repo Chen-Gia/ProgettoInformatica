@@ -6,7 +6,7 @@
     <title>Iscrizione</title>
 </head>
 <body>
-    <h3>Login</h3>
+    <h3>Iscrizione</h3>
     <?php
         session_start();
         if(isset($_SESSION['esiste_username'])) {
