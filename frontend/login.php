@@ -1,5 +1,11 @@
 <?php
 require_once "config.php";
+
+// Verificare se l'utente è loggato
+if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
+    header('Location: index.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">
