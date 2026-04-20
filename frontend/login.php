@@ -40,6 +40,7 @@ require_once "config.php";
 
                 <button type="submit" class="login-btn">Accedi</button>
             </form>
+            <p class="register-link">Non hai un account? <a href="iscrizione.php">Registrati</a></p>
         </div>
     </div>
 </body>

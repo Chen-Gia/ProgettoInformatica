@@ -1,6 +1,5 @@
 <?php
 require_once "config.php";
-require "check_login.php";
 
 // Verificare se l'utente è loggato
 if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
