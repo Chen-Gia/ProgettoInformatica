@@ -1,11 +1,14 @@
 <?php
 require_once "config.php";
-require "check_login.php";
 
+// Verificare se l'utente è loggato
 if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
     header('Location: login.php');
     exit;
 }
+
+$username = $_SESSION['username'];
+$livello = $_SESSION['livello'];
 
 // ── CONFIG ──────────────────────────────────────────────────────
 $CLIENT_ID     = '0a9c97b529bf491faab931ba8959c990';
@@ -80,24 +83,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Cerca su Spotify</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerca su Spotify - Trackly</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div style="max-width:900px; margin:40px auto; padding:0 20px;">
+    <div class="container">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="logo">
+                <i class="fas fa-music"></i>
+                <span>Trackly</span>
+            </div>
 
-    <h1><i class="fab fa-spotify" style="color:#1DB954"></i> Cerca su Spotify</h1>
-    <br>
+            <div class="nav-section">
+                <h3>Menu</h3>
+                <ul>
+                    <li><a href="index.php"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="cerca.php" class="active"><i class="fas fa-search"></i> Cerca</a></li>
+                    <li><a href="#"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
+                    <li><a href="#"><i class="fas fa-list"></i> Coda</a></li>
+                </ul>
+            </div>
 
-    <div style="display:flex; gap:10px; margin-bottom:30px;">
-        <input id="q" type="text" placeholder="Cerca brano o artista..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-        <button onclick="cerca()" class="card-action"><i class="fas fa-search"></i> Cerca</button>
+            <div class="nav-section">
+                <h3>Playlist</h3>
+                <ul>
+                    <li><a href="#"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
+                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 1</a></li>
+                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 2</a></li>
+                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 3</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <!-- TOP BAR -->
+            <div class="top-bar">
+                <div class="search-box">
+                    <input type="text" placeholder="Cerca brani, artisti, playlist...">
+                </div>
+                <div class="user-section">
+                    <div class="user-info">
+                        <div class="user-avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div>
+                        <span><?php echo htmlspecialchars($username); ?></span>
+                    </div>
+                    <a href="logout.php" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Esci
+                    </a>
+                </div>
+            </div>
+
+            <!-- CONTENT AREA -->
+            <div class="content-area">
+                <div class="section-title">
+                    <i class="fab fa-spotify" style="color:#1DB954"></i> Cerca su Spotify
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:30px;">
+                    <input id="q" type="text" placeholder="Cerca brano o artista..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <button onclick="cerca()" class="card-action"><i class="fas fa-search"></i> Cerca</button>
+                </div>
+
+                <div id="risultati" class="grid-container"></div>
+            </div>
+        </div>
     </div>
-
-    <div id="risultati" class="grid-container"></div>
-
-</div>
 
 <script>
 async function cerca() {
