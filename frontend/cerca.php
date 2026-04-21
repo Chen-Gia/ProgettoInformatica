@@ -1,45 +1,29 @@
 <?php
 require_once "config.php";
 
-// Verificare se l'utente è loggato
 if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
     header('Location: login.php');
     exit;
 }
 
 $username = $_SESSION['username'];
-$livello = $_SESSION['livello'];
-
-// ── CONFIG ──────────────────────────────────────────────────────
-$CLIENT_ID     = '0a9c97b529bf491faab931ba8959c990';
-$CLIENT_SECRET = 'c3f6eba6f2ba4f49a906112834db8491';
-
-// ── PRENDI TOKEN SPOTIFY ─────────────────────────────────────────
-function getToken($id, $secret) {
-    $r = file_get_contents('https://accounts.spotify.com/api/token', false,
-        stream_context_create(['http' => [
-            'method'  => 'POST',
-            'header'  => 'Authorization: Basic ' . base64_encode("$id:$secret") . "\r\nContent-Type: application/x-www-form-urlencoded\r\n",
-            'content' => 'grant_type=client_credentials'
-        ]]));
-    return json_decode($r, true)['access_token'];
-}
+$livello  = $_SESSION['livello'];
 
 // ── GESTIONE AJAX ────────────────────────────────────────────────
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    $token = getToken($CLIENT_ID, $CLIENT_SECRET);
 
     // CERCA
     if ($_POST['action'] === 'search') {
-        $url = 'https://api.spotify.com/v1/search?' . http_build_query([
-            'q' => $_POST['query'], 'type' => 'track', 'limit' => 10, 'market' => 'IT'
+        $url = 'https://itunes.apple.com/search?' . http_build_query([
+            'term'    => $_POST['query'],
+            'media'   => 'music',
+            'limit'   => 10,
+            'country' => 'it',
+            'lang'    => 'it_it'
         ]);
-        $r = file_get_contents($url, false, stream_context_create(['http' => [
-            'header' => "Authorization: Bearer $token\r\n"
-        ]]));
-        echo $r; // manda risposta Spotify direttamente al frontend
+        $r = file_get_contents($url);
+        echo $r;
         exit;
     }
 
@@ -47,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === 'save') {
         $titolo  = $_POST['titolo'];
         $artista = $_POST['artista'];
-        $isrc    = $_POST['isrc'] ?: null;
-        $anno    = $_POST['anno'] ?: null;
+        $anno    = $_POST['anno']   ?: null;
         $durata  = $_POST['durata'] ?: null;
+        $genere  = $_POST['genere'] ?: null;
 
         // Artista: trova o crea
         $s = $connessione->prepare("SELECT id FROM artisti WHERE nome = ?");
@@ -63,17 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $aid = $connessione->insert_id;
         }
 
-        // Brano: controlla duplicato poi inserisci
-        if ($isrc) {
-            $s = $connessione->prepare("SELECT id FROM brani WHERE isrc = ?");
-            $s->bind_param("s", $isrc); $s->execute();
-            if ($s->get_result()->num_rows > 0) {
-                echo json_encode(['status' => 'exists']); exit;
-            }
+        // Brano: controlla duplicato per titolo + artista
+        $s = $connessione->prepare("SELECT id FROM brani WHERE titolo = ? AND artista_id = ?");
+        $s->bind_param("si", $titolo, $aid); $s->execute();
+        if ($s->get_result()->num_rows > 0) {
+            echo json_encode(['status' => 'exists']); exit;
         }
 
-        $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, isrc, anno, durata) VALUES (?, ?, ?, ?, ?)");
-        $s->bind_param("sisii", $titolo, $aid, $isrc, $anno, $durata);
+        // Inserisci brano
+        $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, anno, durata, genere) VALUES (?, ?, ?, ?, ?)");
+        $s->bind_param("siiss", $titolo, $aid, $anno, $durata, $genere);
         $s->execute();
         echo json_encode(['status' => 'ok']); exit;
     }
@@ -84,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cerca su Spotify - Trackly</title>
+    <title>Cerca Musica - Trackly</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -96,7 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-music"></i>
                 <span>Trackly</span>
             </div>
-
             <div class="nav-section">
                 <h3>Menu</h3>
                 <ul>
@@ -106,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <li><a href="#"><i class="fas fa-list"></i> Coda</a></li>
                 </ul>
             </div>
-
             <div class="nav-section">
                 <h3>Playlist</h3>
                 <ul>
@@ -122,9 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="main-content">
             <!-- TOP BAR -->
             <div class="top-bar">
-                <div class="search-box">
-                    <input type="text" placeholder="Cerca brani, artisti, playlist...">
-                </div>
                 <div class="user-section">
                     <div class="user-info">
                         <div class="user-avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div>
@@ -138,16 +116,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- CONTENT AREA -->
             <div class="content-area">
+
                 <div class="section-title">
-                    <i class="fab fa-spotify" style="color:#1DB954"></i> Cerca su Spotify
+                    <i class="fas fa-search"></i> Cerca Musica
                 </div>
 
                 <div style="display:flex; gap:10px; margin-bottom:30px;">
-                    <input id="q" type="text" placeholder="Cerca brano o artista..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
-                    <button onclick="cerca()" class="card-action"><i class="fas fa-search"></i> Cerca</button>
+                    <input id="q" type="text" placeholder="Cerca brano o artista..."
+                        style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <button onclick="cerca()" class="card-action">
+                        <i class="fas fa-search"></i> Cerca
+                    </button>
                 </div>
 
                 <div id="risultati" class="grid-container"></div>
+
             </div>
         </div>
     </div>
@@ -159,53 +142,100 @@ async function cerca() {
 
     document.getElementById('risultati').innerHTML = '<p>Ricerca in corso...</p>';
 
-    const fd = new FormData();
-    fd.append('action', 'search');
-    fd.append('query', query);
+    try {
+        const fd = new FormData();
+        fd.append('action', 'search');
+        fd.append('query', query);
 
-    const res  = await fetch('', { method: 'POST', body: fd });
-    const data = await res.json();
-    const brani = data.tracks?.items ?? [];
+        const res  = await fetch('', { method: 'POST', body: fd });
+        const data = await res.json();
+        const brani = data.results ?? [];
 
-    if (!brani.length) {
-        document.getElementById('risultati').innerHTML = '<p>Nessun risultato.</p>';
-        return;
+        if (!brani.length) {
+            document.getElementById('risultati').innerHTML = '<p>Nessun risultato.</p>';
+            return;
+        }
+
+        document.getElementById('risultati').innerHTML = brani.map(b => `
+            <div class="card">
+                <div class="card-image">
+                    <img src="${b.artworkUrl100 ?? ''}" style="width:100%; border-radius:8px;">
+                </div>
+                <div class="card-title">${b.trackName}</div>
+                <div class="card-subtitle">${b.artistName}</div>
+                <div class="card-subtitle" style="font-size:11px; opacity:.6">
+                    ${b.collectionName} · ${b.releaseDate?.slice(0,4)}
+                </div>
+                <div class="card-subtitle" style="font-size:11px; opacity:.6">
+                    ${b.primaryGenreName ?? ''}
+                </div>
+                <br>
+                ${b.previewUrl ? `
+                <audio id="audio_${b.trackId}" src="${b.previewUrl}"></audio>
+                <button class="card-action" style="margin-bottom:6px" onclick="togglePreview(${b.trackId})">
+                    <i class="fas fa-play" id="icon_${b.trackId}"></i> Anteprima
+                </button>` : ''}
+                <button class="card-action" onclick='salva(this, ${JSON.stringify({
+                    titolo:  b.trackName,
+                    artista: b.artistName,
+                    anno:    b.releaseDate?.slice(0,4) ?? '',
+                    durata:  Math.round((b.trackTimeMillis ?? 0) / 1000),
+                    genere:  b.primaryGenreName ?? ''
+                })})'>
+                    <i class="fas fa-plus"></i> Aggiungi al DB
+                </button>
+            </div>
+        `).join('');
+
+    } catch (err) {
+        document.getElementById('risultati').innerHTML = '<p style="color:red;">❌ Errore: ' + err.message + '</p>';
+    }
+}
+
+// Anteprima audio 30 secondi
+let currentAudio = null;
+function togglePreview(trackId) {
+    const audio = document.getElementById('audio_' + trackId);
+    const icon  = document.getElementById('icon_'  + trackId);
+
+    if (currentAudio && currentAudio !== audio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        const prevId   = currentAudio.id.replace('audio_', '');
+        const prevIcon = document.getElementById('icon_' + prevId);
+        if (prevIcon) prevIcon.className = 'fas fa-play';
     }
 
-    document.getElementById('risultati').innerHTML = brani.map(b => `
-        <div class="card">
-            <div class="card-image">
-                <img src="${b.album.images[1]?.url ?? ''}" style="width:100%; border-radius:8px;">
-            </div>
-            <div class="card-title">${b.name}</div>
-            <div class="card-subtitle">${b.artists.map(a => a.name).join(', ')}</div>
-            <div class="card-subtitle" style="font-size:11px; opacity:.6">${b.album.name} · ${b.album.release_date?.slice(0,4)}</div>
-            <br>
-            <button class="card-action" onclick='salva(this, ${JSON.stringify({
-                titolo:  b.name,
-                artista: b.artists[0].name,
-                isrc:    b.external_ids?.isrc ?? '',
-                anno:    b.album.release_date?.slice(0,4) ?? '',
-                durata:  Math.round(b.duration_ms / 1000)
-            })})'>
-                <i class="fas fa-plus"></i> Aggiungi al DB
-            </button>
-        </div>
-    `).join('');
+    if (audio.paused) {
+        audio.play();
+        icon.className = 'fas fa-pause';
+        currentAudio   = audio;
+        audio.onended  = () => { icon.className = 'fas fa-play'; };
+    } else {
+        audio.pause();
+        audio.currentTime = 0;
+        icon.className    = 'fas fa-play';
+        currentAudio      = null;
+    }
 }
 
 async function salva(btn, brano) {
     btn.disabled = true;
     const fd = new FormData();
     fd.append('action', 'save');
-    Object.entries(brano).forEach(([k, v]) => fd.append(k, v));
+    const branoObj = typeof brano === 'string' ? JSON.parse(brano) : brano;
+    Object.entries(branoObj).forEach(([k, v]) => fd.append(k, v));
 
-    const res  = await fetch('', { method: 'POST', body: fd });
-    const data = await res.json();
+    try {
+        const res  = await fetch('', { method: 'POST', body: fd });
+        const data = await res.json();
 
-    if (data.status === 'ok')          { btn.textContent = '✅ Aggiunto!'; }
-    else if (data.status === 'exists') { btn.textContent = 'ℹ️ Già presente'; }
-    else                               { btn.textContent = '❌ Errore'; btn.disabled = false; }
+        if (data.status === 'ok')          { btn.textContent = '✅ Aggiunto!'; }
+        else if (data.status === 'exists') { btn.textContent = 'ℹ️ Già presente'; }
+        else                               { btn.textContent = '❌ Errore'; btn.disabled = false; }
+    } catch (err) {
+        btn.textContent = '❌ Errore'; btn.disabled = false;
+    }
 }
 
 document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') cerca(); });
