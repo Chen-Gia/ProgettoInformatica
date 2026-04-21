@@ -60,9 +60,6 @@ $playlist = $connessione->query("SELECT * FROM playlist LIMIT 6");
         <div class="main-content">
             <!-- TOP BAR -->
             <div class="top-bar">
-                <div class="search-box">
-                    <input type="text" placeholder="Cerca brani, artisti, playlist...">
-                </div>
                 <div class="user-section">
                     <div class="user-info">
                         <div class="user-avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div>
