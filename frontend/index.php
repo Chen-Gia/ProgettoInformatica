@@ -39,7 +39,7 @@ $playlist = $connessione->query("SELECT * FROM playlist LIMIT 6");
                 <h3>Menu</h3>
                 <ul>
                     <li><a href="index.php" class="active"><i class="fas fa-home"></i> Home</a></li>
-                    <li><a href="#"><i class="fas fa-search"></i> Scopri</a></li>
+                    <li><a href="cerca.php"><i class="fas fa-search"></i> Cerca</a></li>
                     <li><a href="#"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
                     <li><a href="#"><i class="fas fa-list"></i> Coda</a></li>
                 </ul>
