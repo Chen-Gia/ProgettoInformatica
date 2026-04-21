@@ -9,21 +9,20 @@ if (empty($user) || empty($email) || empty($password)) {
     die("Dati mancanti");
 }
 
-// Controlla duplicati
 $sql1 = 'SELECT * FROM utenti WHERE username = ? OR email = ?';
 $preparata1 = $connessione->prepare($sql1);
 $preparata1->execute([$user, $email]);
 
 if ($preparata1->rowCount() == 0) {
     $livello = 1;
+    $hash = password_hash($password, PASSWORD_DEFAULT);
     $sql2 = 'INSERT INTO utenti (username, email, password, livello) VALUES (?, ?, ?, ?)';
     $preparata2 = $connessione->prepare($sql2);
-    $preparata2->execute([$user, $email, $password, $livello]);
+    $preparata2->execute([$user, $email, $hash, $livello]);
     header('Location: login.php');
     exit;
 
 } else {
-    // Controlla se è username o email il duplicato
     $sql3 = 'SELECT * FROM utenti WHERE username = ?';
     $preparata3 = $connessione->prepare($sql3);
     $preparata3->execute([$user]);

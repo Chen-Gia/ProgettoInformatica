@@ -2,8 +2,7 @@ CREATE DATABASE catalogo_musicale;
 USE catalogo_musicale;
 
 CREATE TABLE utenti (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
+    username VARCHAR(50) NOT NULL PRIMARY KEY,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     livello INT NOT NULL DEFAULT 1
@@ -38,29 +37,29 @@ CREATE TABLE brani (
 
 CREATE TABLE valutazioni (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    utente_id INT,
+    utente_username VARCHAR(50),
     brano_id INT,
     album_id INT,
     voto INT CHECK (voto >= 1 AND voto <= 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (utente_id) REFERENCES utenti(id) ON DELETE CASCADE,
+    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
     FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE,
     FOREIGN KEY (album_id) REFERENCES album(id) ON DELETE CASCADE
 );
 
 CREATE TABLE preferiti (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    utente_id INT,
+    utente_username VARCHAR(50),
     brano_id INT,
-    FOREIGN KEY (utente_id) REFERENCES utenti(id) ON DELETE CASCADE,
+    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
     FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
 );
 
 CREATE TABLE playlist (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    utente_id INT,
+    utente_username VARCHAR(50),
     nome VARCHAR(100),
-    FOREIGN KEY (utente_id) REFERENCES utenti(id) ON DELETE CASCADE
+    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE
 );
 
 CREATE TABLE playlist_brani (
@@ -73,10 +72,10 @@ CREATE TABLE playlist_brani (
 
 CREATE TABLE commenti (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    utente_id INT NOT NULL,
+    utente_username VARCHAR(50),
     brano_id INT NOT NULL,
     contenuto TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (utente_id) REFERENCES utenti(id) ON DELETE CASCADE,
+    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
     FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
 );
