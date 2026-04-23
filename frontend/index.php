@@ -11,10 +11,28 @@ if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
 $username = $_SESSION['username'];
 $livello = $_SESSION['livello'];
 
-// Esempi di query per ottenere dati (modifica secondo le tue tabelle)
-$brani_recenti = $connessione->query("SELECT * FROM brani LIMIT 6");
-$artisti = $connessione->query("SELECT * FROM artisti LIMIT 6");
-$playlist = $connessione->query("SELECT * FROM playlist LIMIT 6");
+// Brani preferiti dell'utente (ultimi 12 = 2 righe)
+$stmt_preferiti = $connessione->prepare("
+    SELECT b.id, b.titolo, b.anno, a.nome as artista
+    FROM preferiti p
+    JOIN brani b ON p.brano_id = b.id
+    JOIN artisti a ON b.artista_id = a.id
+    WHERE p.utente_username = ?
+    ORDER BY p.id DESC
+    LIMIT 12
+");
+$stmt_preferiti->execute([$username]);
+$brani_preferiti = $stmt_preferiti->fetchAll(PDO::FETCH_ASSOC);
+
+// Playlist dell'utente
+$stmt_playlist = $connessione->prepare("
+    SELECT id, nome
+    FROM playlist
+    WHERE utente_username = ?
+    ORDER BY id DESC
+");
+$stmt_playlist->execute([$username]);
+$playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -48,10 +66,10 @@ $playlist = $connessione->query("SELECT * FROM playlist LIMIT 6");
             <div class="nav-section">
                 <h3>Playlist</h3>
                 <ul>
-                    <li><a href="#"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
-                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 1</a></li>
-                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 2</a></li>
-                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 3</a></li>
+                    <?php foreach ($playlist_utente as $pl): ?>
+                        <li><a href="#"><i class="fas fa-headphones"></i> <?php echo htmlspecialchars($pl['nome']); ?></a></li>
+                    <?php endforeach; ?>
+                    <li><a href="crea_playlist.php"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
                 </ul>
             </div>
         </div>
@@ -77,17 +95,17 @@ $playlist = $connessione->query("SELECT * FROM playlist LIMIT 6");
                 <div class="hero">
                     <h1>🎵 Benvenuto in Trackly</h1>
                     <p>Il tuo nuovo modo di scoprire musica straordinaria</p>
-                    <button class="hero-btn">Inizia a Esplorare</button>
+                    <a href="cerca.php" class="hero-btn" style="text-decoration:none; display:inline-block;">Inizia a Esplorare</a>
                 </div>
 
-                <!-- BRANI RECENTI -->
+                <!-- ULTIMI BRANI PREFERITI -->
                 <div class="section-title">
-                    <i class="fas fa-star"></i> Brani Recenti
+                    <i class="fas fa-heart"></i> Ultimi Brani Preferiti
                 </div>
                 <div class="grid-container">
                     <?php
-                    if ($brani_recenti && $brani_recenti->num_rows > 0) {
-                        while ($brano = $brani_recenti->fetch_assoc()) {
+                    if (count($brani_preferiti) > 0) {
+                        foreach ($brani_preferiti as $brano) {
                             echo "<div class='card'>";
                             echo "<div class='card-image'><i class='fas fa-music'></i></div>";
                             echo "<div class='card-title'>" . htmlspecialchars($brano['titolo'] ?? 'Senza titolo') . "</div>";
@@ -97,56 +115,33 @@ $playlist = $connessione->query("SELECT * FROM playlist LIMIT 6");
                         }
                     } else {
                         echo "<div class='empty-state' style='grid-column: 1/-1;'>";
-                        echo "<i class='fas fa-music'></i>";
-                        echo "<p>Nessun brano disponibile. Aggiungi brani al catalogo!</p>";
+                        echo "<i class='fas fa-heart'></i>";
+                        echo "<p>Non hai ancora brani nei preferiti. <a href='cerca.php'>Aggiungi brani</a>!</p>";
                         echo "</div>";
                     }
                     ?>
                 </div>
 
-                <!-- ARTISTI TOP -->
+                <!-- PLAYLIST UTENTE -->
                 <div class="section-title">
-                    <i class="fas fa-microphone-alt"></i> Artisti Top
+                    <i class="fas fa-compact-disc"></i> Le Tue Playlist
                 </div>
                 <div class="grid-container">
                     <?php
-                    if ($artisti && $artisti->num_rows > 0) {
-                        while ($artista = $artisti->fetch_assoc()) {
-                            echo "<div class='card'>";
-                            echo "<div class='card-image' style='background: linear-gradient(135deg, #FF6B6B, #FF8E72);'><i class='fas fa-user'></i></div>";
-                            echo "<div class='card-title'>" . htmlspecialchars($artista['nome'] ?? 'Artista sconosciuto') . "</div>";
-                            echo "<div class='card-subtitle'>Artista</div>";
-                            echo "<button class='card-action'><i class='fas fa-play'></i> Ascolta</button>";
-                            echo "</div>";
-                        }
-                    } else {
-                        echo "<div class='empty-state' style='grid-column: 1/-1;'>";
-                        echo "<i class='fas fa-microphone-alt'></i>";
-                        echo "<p>Nessun artista disponibile.</p>";
-                        echo "</div>";
-                    }
-                    ?>
-                </div>
-
-                <!-- PLAYLIST -->
-                <div class="section-title">
-                    <i class="fas fa-compact-disc"></i> Playlist Consigliate
-                </div>
-                <div class="grid-container">
-                    <?php
-                    if ($playlist && $playlist->num_rows > 0) {
-                        while ($item = $playlist->fetch_assoc()) {
+                    if (count($playlist_utente) > 0) {
+                        foreach ($playlist_utente as $item) {
                             echo "<div class='card'>";
                             echo "<div class='card-image' style='background: linear-gradient(135deg, #4ECDC4, #44A08D);'><i class='fas fa-list'></i></div>";
-                            echo "<div class='card-title'>" . htmlspecialchars($item['nome'] ?? 'Playlist') . "</div>";
-                            echo "<div class='card-subtitle'>" . htmlspecialchars($item['descrizione'] ?? 'Playlist') . "</div>";
+                            echo "<div class='card-title'>" . htmlspecialchars($item['nome']) . "</div>";
+                            echo "<div class='card-subtitle'>Playlist</div>";
                             echo "<button class='card-action'><i class='fas fa-play'></i> Riproduci</button>";
                             echo "</div>";
                         }
                     } else {
-                        echo "<div class='empty-state' style='grid-column: 1/-1;'>";
-                        echo "<i class='fas fa-compact-disc'></i>";
-                        echo "<p>Nessuna playlist disponibile.</p>";
+                        echo "<div class='empty-state' style='grid-column: 1/-1; text-align: center;'>";
+                        echo "<i class='fas fa-compact-disc' style='font-size: 48px; margin-bottom: 10px; display: block;'></i>";
+                        echo "<p>Non hai ancora creato playlist.</p>";
+                        echo "<a href='crea_playlist.php' style='display: inline-block; margin-top: 10px; padding: 10px 20px; background: #1DB954; color: white; border-radius: 8px; text-decoration: none;'>📋 Crea Ora</a>";
                         echo "</div>";
                     }
                     ?>
