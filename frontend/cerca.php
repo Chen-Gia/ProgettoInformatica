@@ -9,6 +9,16 @@ if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
 $username = $_SESSION['username'];
 $livello  = $_SESSION['livello'];
 
+// Carica le playlist dell'utente per la sidebar
+$stmt_playlist = $connessione->prepare("
+    SELECT id, nome
+    FROM playlist
+    WHERE utente_username = ?
+    ORDER BY id DESC
+");
+$stmt_playlist->execute([$username]);
+$playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
+
 // ── GESTIONE AJAX ────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -18,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $url = 'https://itunes.apple.com/search?' . http_build_query([
             'term'    => $_POST['query'],
             'media'   => 'music',
-            'limit'   => 10,
+            'limit'   => 50,
             'country' => 'it',
             'lang'    => 'it_it'
         ]);
@@ -27,38 +37,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // CERCA NEL DATABASE
+    if ($_POST['action'] === 'search_db') {
+        $query = '%' . $_POST['query'] . '%';
+        try {
+            $s = $connessione->prepare("
+                SELECT b.id, b.titolo, b.durata, b.anno, b.genere, 
+                       a.nome as artista
+                FROM brani b
+                JOIN artisti a ON b.artista_id = a.id
+                WHERE b.titolo LIKE ? OR a.nome LIKE ?
+                ORDER BY b.titolo
+                LIMIT 50
+            ");
+            $s->execute([$query, $query]);
+            $brani = $s->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Formatta i risultati simile a iTunes per il frontend
+            $results = array_map(function($b) {
+                return [
+                    'trackId' => $b['id'],
+                    'trackName' => $b['titolo'],
+                    'artistName' => $b['artista'],
+                    'releaseDate' => $b['anno'] . '-01-01',
+                    'primaryGenreName' => $b['genere'],
+                    'trackTimeMillis' => ($b['durata'] ?? 0) * 1000,
+                    'artworkUrl100' => '',
+                    'isFromDB' => true
+                ];
+            }, $brani);
+            
+            echo json_encode(['results' => $results]);
+            exit;
+        } catch (PDOException $e) {
+            echo json_encode(['results' => []]); 
+            exit;
+        }
+    }
+
     // SALVA NEL DB
     if ($_POST['action'] === 'save') {
         $titolo  = $_POST['titolo'];
         $artista = $_POST['artista'];
-        $anno    = $_POST['anno']   ?: null;
-        $durata  = $_POST['durata'] ?: null;
-        $genere  = $_POST['genere'] ?: null;
+        $anno    = !empty($_POST['anno']) ? (int)$_POST['anno'] : null;
+        $durata  = !empty($_POST['durata']) ? (int)$_POST['durata'] : null;
+        $genere  = !empty($_POST['genere']) ? $_POST['genere'] : null;
 
-        // Artista: trova o crea
-        $s = $connessione->prepare("SELECT id FROM artisti WHERE nome = ?");
-        $s->bind_param("s", $artista); $s->execute();
-        $r = $s->get_result();
-        if ($r->num_rows > 0) {
-            $aid = $r->fetch_assoc()['id'];
-        } else {
-            $s = $connessione->prepare("INSERT INTO artisti (nome) VALUES (?)");
-            $s->bind_param("s", $artista); $s->execute();
-            $aid = $connessione->insert_id;
+        try {
+            // Artista: trova o crea
+            $s = $connessione->prepare("SELECT id FROM artisti WHERE nome = ?");
+            $s->execute([$artista]);
+            $result = $s->fetch(PDO::FETCH_ASSOC);
+            if ($result) {
+                $aid = $result['id'];
+            } else {
+                $s = $connessione->prepare("INSERT INTO artisti (nome) VALUES (?)");
+                $s->execute([$artista]);
+                $aid = $connessione->lastInsertId();
+            }
+
+            // Brano: controlla duplicato per titolo + artista
+            $s = $connessione->prepare("SELECT id FROM brani WHERE titolo = ? AND artista_id = ?");
+            $s->execute([$titolo, $aid]);
+            $existingBrano = $s->fetch(PDO::FETCH_ASSOC);
+            if ($existingBrano) {
+                echo json_encode(['status' => 'exists', 'brano_id' => $existingBrano['id']]); exit;
+            }
+
+            // Inserisci brano
+            $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, anno, durata, genere) VALUES (?, ?, ?, ?, ?)");
+            $s->execute([$titolo, $aid, $anno, $durata, $genere]);
+            $branoId = $connessione->lastInsertId();
+            echo json_encode(['status' => 'ok', 'brano_id' => $branoId]); exit;
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); exit;
         }
+    }
 
-        // Brano: controlla duplicato per titolo + artista
-        $s = $connessione->prepare("SELECT id FROM brani WHERE titolo = ? AND artista_id = ?");
-        $s->bind_param("si", $titolo, $aid); $s->execute();
-        if ($s->get_result()->num_rows > 0) {
-            echo json_encode(['status' => 'exists']); exit;
+    // CARICA PLAYLIST
+    if ($_POST['action'] === 'get_playlists') {
+        try {
+            $s = $connessione->prepare("SELECT id, nome FROM playlist WHERE utente_username = ? ORDER BY nome");
+            $s->execute([$username]);
+            $playlists = $s->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['status' => 'ok', 'playlists' => $playlists]); exit;
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); exit;
         }
+    }
 
-        // Inserisci brano
-        $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, anno, durata, genere) VALUES (?, ?, ?, ?, ?)");
-        $s->bind_param("siiss", $titolo, $aid, $anno, $durata, $genere);
-        $s->execute();
-        echo json_encode(['status' => 'ok']); exit;
+    // AGGIUNGI AI PREFERITI
+    if ($_POST['action'] === 'add_favorite') {
+        $branoId = (int)$_POST['brano_id'];
+        try {
+            $s = $connessione->prepare("INSERT INTO preferiti (utente_username, brano_id) VALUES (?, ?)");
+            $s->execute([$username, $branoId]);
+            echo json_encode(['status' => 'ok']); exit;
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate') !== false) {
+                echo json_encode(['status' => 'exists']); exit;
+            }
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); exit;
+        }
+    }
+
+    // AGGIUNGI A PLAYLIST
+    if ($_POST['action'] === 'add_to_playlist') {
+        $branoId = (int)$_POST['brano_id'];
+        $playlistId = (int)$_POST['playlist_id'];
+        try {
+            $s = $connessione->prepare("INSERT INTO playlist_brani (playlist_id, brano_id) VALUES (?, ?)");
+            $s->execute([$playlistId, $branoId]);
+            echo json_encode(['status' => 'ok']); exit;
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate') !== false) {
+                echo json_encode(['status' => 'exists']); exit;
+            }
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); exit;
+        }
     }
 }
 ?>
@@ -91,10 +187,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="nav-section">
                 <h3>Playlist</h3>
                 <ul>
-                    <li><a href="#"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
-                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 1</a></li>
-                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 2</a></li>
-                    <li><a href="#"><i class="fas fa-headphones"></i> Playlist 3</a></li>
+                    <?php foreach ($playlist_utente as $pl): ?>
+                        <li><a href="#"><i class="fas fa-headphones"></i> <?php echo htmlspecialchars($pl['nome']); ?></a></li>
+                    <?php endforeach; ?>
+                    <li><a href="crea_playlist.php"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
                 </ul>
             </div>
         </div>
@@ -136,6 +232,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
 <script>
+// Variabile globale con il livello utente (passato dal PHP)
+const userLevel = <?php echo $livello; ?>;
+
 async function cerca() {
     const query = document.getElementById('q').value.trim();
     if (!query) return;
@@ -144,7 +243,13 @@ async function cerca() {
 
     try {
         const fd = new FormData();
-        fd.append('action', 'search');
+        
+        // Se livello 0: cerca su iTunes, se livello 1: cerca nel DB
+        if (userLevel === 0) {
+            fd.append('action', 'search');
+        } else {
+            fd.append('action', 'search_db');
+        }
         fd.append('query', query);
 
         const res  = await fetch('', { method: 'POST', body: fd });
@@ -156,39 +261,83 @@ async function cerca() {
             return;
         }
 
-        document.getElementById('risultati').innerHTML = brani.map(b => `
-            <div class="card">
-                <div class="card-image">
-                    <img src="${b.artworkUrl100 ?? ''}" style="width:100%; border-radius:8px;">
-                </div>
-                <div class="card-title">${b.trackName}</div>
-                <div class="card-subtitle">${b.artistName}</div>
-                <div class="card-subtitle" style="font-size:11px; opacity:.6">
-                    ${b.collectionName} · ${b.releaseDate?.slice(0,4)}
-                </div>
-                <div class="card-subtitle" style="font-size:11px; opacity:.6">
-                    ${b.primaryGenreName ?? ''}
-                </div>
-                <br>
-                ${b.previewUrl ? `
-                <audio id="audio_${b.trackId}" src="${b.previewUrl}"></audio>
-                <button class="card-action" style="margin-bottom:6px" onclick="togglePreview(${b.trackId})">
-                    <i class="fas fa-play" id="icon_${b.trackId}"></i> Anteprima
-                </button>` : ''}
-                <button class="card-action" onclick='salva(this, ${JSON.stringify({
-                    titolo:  b.trackName,
-                    artista: b.artistName,
-                    anno:    b.releaseDate?.slice(0,4) ?? '',
-                    durata:  Math.round((b.trackTimeMillis ?? 0) / 1000),
-                    genere:  b.primaryGenreName ?? ''
-                })})'>
-                    <i class="fas fa-plus"></i> Aggiungi al DB
-                </button>
-            </div>
-        `).join('');
+        // Renderizza i risultati
+        document.getElementById('risultati').innerHTML = brani.map(b => {
+            const isFromDB = b.isFromDB === true;
+            
+            // Per livello 0 (iTunes): mostra il pulsante "Aggiungi al DB"
+            if (userLevel === 0) {
+                return `
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="${b.artworkUrl100 ?? ''}" style="width:100%; border-radius:8px;">
+                        </div>
+                        <div class="card-title">${b.trackName}</div>
+                        <div class="card-subtitle">${b.artistName}</div>
+                        <div class="card-subtitle" style="font-size:11px; opacity:.6">
+                            ${b.collectionName ?? ''} · ${b.releaseDate?.slice(0,4) ?? ''}
+                        </div>
+                        <div class="card-subtitle" style="font-size:11px; opacity:.6">
+                            ${b.primaryGenreName ?? ''}
+                        </div>
+                        <br>
+                        ${b.previewUrl ? `
+                        <audio id="audio_${b.trackId}" src="${b.previewUrl}"></audio>
+                        <button class="card-action" style="margin-bottom:6px" onclick="togglePreview(${b.trackId})">
+                            <i class="fas fa-play" id="icon_${b.trackId}"></i> Anteprima
+                        </button>` : ''}
+                        <button class="card-action" onclick='salva(this, ${JSON.stringify({
+                            titolo:  b.trackName,
+                            artista: b.artistName,
+                            anno:    b.releaseDate?.slice(0,4) ?? '',
+                            durata:  Math.round((b.trackTimeMillis ?? 0) / 1000),
+                            genere:  b.primaryGenreName ?? ''
+                        })})'>
+                            <i class="fas fa-plus"></i> Aggiungi al DB
+                        </button>
+                        <div class="card-actions" data-track-id="${b.trackId}"></div>
+                    </div>
+                `;
+            } 
+            // Per livello 1 (DB): mostra solo le card senza pulsanti
+            else {
+                return `
+                    <div class="card">
+                        <div class="card-image">
+                            <img src="${b.artworkUrl100 ?? ''}" style="width:100%; border-radius:8px; background:#f0f0f0;">
+                        </div>
+                        <div class="card-title">${b.trackName}</div>
+                        <div class="card-subtitle">${b.artistName}</div>
+                        <div class="card-subtitle" style="font-size:11px; opacity:.6">
+                            ${b.releaseDate?.slice(0,4) ?? ''} · ${b.primaryGenreName ?? ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
 
     } catch (err) {
         document.getElementById('risultati').innerHTML = '<p style="color:red;">❌ Errore: ' + err.message + '</p>';
+    }
+}
+                    <select id="playlist_${branoId}" style="padding:8px; border-radius:4px; border:1px solid #ddd; width:100%; cursor:pointer; margin-bottom:6px;">
+                        <option value="">-- Seleziona Playlist --</option>
+                        ${playlists.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
+                    </select>
+                    <button class="card-action" style="width:100%" onclick="aggiungiPlaylist(this, ${branoId})">
+                        <i class="fas fa-list"></i> Aggiungi a Playlist
+                    </button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="padding:8px; background:#f0f0f0; border-radius:4px; text-align:center; font-size:12px; color:#666;">
+                    Non hai playlist. Creane una!
+                </div>
+            `;
+        }
+    } catch (err) {
+        // Errore silenzioso, non mostra nulla
     }
 }
 
@@ -230,11 +379,62 @@ async function salva(btn, brano) {
         const res  = await fetch('', { method: 'POST', body: fd });
         const data = await res.json();
 
-        if (data.status === 'ok')          { btn.textContent = '✅ Aggiunto!'; }
-        else if (data.status === 'exists') { btn.textContent = 'ℹ️ Già presente'; }
-        else                               { btn.textContent = '❌ Errore'; btn.disabled = false; }
+        if (data.status === 'ok' || data.status === 'exists') {
+            const branoId = data.brano_id;
+            const card = btn.closest('.card');
+            const actionsDiv = card.querySelector('[data-track-id]');
+            
+            btn.textContent = data.status === 'ok' ? '✅ Aggiunto!' : 'ℹ️ Già presente';
+            
+            // Mostra i pulsanti per preferiti e playlist
+            await mostraAzioni(actionsDiv, branoId);
+        } else {
+            btn.textContent = '❌ Errore'; 
+            btn.disabled = false;
+        }
     } catch (err) {
-        btn.textContent = '❌ Errore'; btn.disabled = false;
+        btn.textContent = '❌ Errore'; 
+        btn.disabled = false;
+    }
+}
+
+async function mostraAzioni(container, branoId) {
+    try {
+        let html = `
+            <button class="card-action" style="margin-top:8px; background:#e74c3c; padding:10px; border:none; border-radius:8px; color:white; cursor:pointer; width:100%; font-weight:500; transition:all 0.3s ease;" onclick="aggiungiPreferito(this, ${branoId})">
+                <i class="fas fa-heart"></i> Aggiungi ai Preferiti
+            </button>
+        `;
+
+        container.innerHTML = html;
+    } catch (err) {
+        container.innerHTML = '<p style="color:red; font-size:12px;">Errore nel caricamento</p>';
+    }
+}
+
+async function aggiungiPreferito(btn, branoId) {
+    btn.disabled = true;
+    const fd = new FormData();
+    fd.append('action', 'add_favorite');
+    fd.append('brano_id', branoId);
+
+    try {
+        const res = await fetch('', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+            btn.textContent = '❤️ Aggiunto ai Preferiti!';
+            btn.style.color = '#e74c3c';
+        } else if (data.status === 'exists') {
+            btn.textContent = '❤️ Già nei Preferiti';
+            btn.style.color = '#e74c3c';
+        } else {
+            btn.textContent = '❌ Errore';
+            btn.disabled = false;
+        }
+    } catch (err) {
+        btn.textContent = '❌ Errore';
+        btn.disabled = false;
     }
 }
 
