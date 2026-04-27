@@ -32,8 +32,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'country' => 'it',
             'lang'    => 'it_it'
         ]);
-        $r = file_get_contents($url);
-        echo $r;
+        
+        try {
+            $r = file_get_contents($url);
+            if ($r === false) {
+                echo json_encode(['results' => []]);
+            } else {
+                echo $r;
+            }
+        } catch (Exception $e) {
+            echo json_encode(['results' => []]);
+        }
         exit;
     }
 
@@ -180,7 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <ul>
                     <li><a href="index.php"><i class="fas fa-home"></i> Home</a></li>
                     <li><a href="cerca.php" class="active"><i class="fas fa-search"></i> Cerca</a></li>
-                    <li><a href="#"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
+                    <li><a href="preferiti.php"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
                     <li><a href="#"><i class="fas fa-list"></i> Coda</a></li>
                 </ul>
             </div>
@@ -299,7 +308,7 @@ async function cerca() {
                     </div>
                 `;
             } 
-            // Per livello 1 (DB): mostra solo le card senza pulsanti
+            // Per livello 1 (DB): mostra le card con pulsanti di azione
             else {
                 return `
                     <div class="card">
@@ -311,6 +320,14 @@ async function cerca() {
                         <div class="card-subtitle" style="font-size:11px; opacity:.6">
                             ${b.releaseDate?.slice(0,4) ?? ''} · ${b.primaryGenreName ?? ''}
                         </div>
+                        <br>
+                        <button class="card-action" onclick="aggiungiPreferito(this, ${b.trackId})">
+                            <i class="fas fa-heart"></i> Aggiungi ai Preferiti
+                        </button>
+                        <button class="card-action" style="margin-top:6px" onclick="mostraPlaylistDialog(${b.trackId})">
+                            <i class="fas fa-list"></i> Aggiungi a Playlist
+                        </button>
+                        <div class="card-actions" data-track-id="${b.trackId}"></div>
                     </div>
                 `;
             }
@@ -318,26 +335,6 @@ async function cerca() {
 
     } catch (err) {
         document.getElementById('risultati').innerHTML = '<p style="color:red;">❌ Errore: ' + err.message + '</p>';
-    }
-}
-                    <select id="playlist_${branoId}" style="padding:8px; border-radius:4px; border:1px solid #ddd; width:100%; cursor:pointer; margin-bottom:6px;">
-                        <option value="">-- Seleziona Playlist --</option>
-                        ${playlists.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
-                    </select>
-                    <button class="card-action" style="width:100%" onclick="aggiungiPlaylist(this, ${branoId})">
-                        <i class="fas fa-list"></i> Aggiungi a Playlist
-                    </button>
-                </div>
-            `;
-        } else {
-            container.innerHTML = `
-                <div style="padding:8px; background:#f0f0f0; border-radius:4px; text-align:center; font-size:12px; color:#666;">
-                    Non hai playlist. Creane una!
-                </div>
-            `;
-        }
-    } catch (err) {
-        // Errore silenzioso, non mostra nulla
     }
 }
 
@@ -404,6 +401,9 @@ async function mostraAzioni(container, branoId) {
             <button class="card-action" style="margin-top:8px; background:#e74c3c; padding:10px; border:none; border-radius:8px; color:white; cursor:pointer; width:100%; font-weight:500; transition:all 0.3s ease;" onclick="aggiungiPreferito(this, ${branoId})">
                 <i class="fas fa-heart"></i> Aggiungi ai Preferiti
             </button>
+            <button class="card-action" style="margin-top:6px;" onclick="mostraPlaylistDialog(${branoId})">
+                <i class="fas fa-list"></i> Aggiungi a Playlist
+            </button>
         `;
 
         container.innerHTML = html;
@@ -435,6 +435,73 @@ async function aggiungiPreferito(btn, branoId) {
     } catch (err) {
         btn.textContent = '❌ Errore';
         btn.disabled = false;
+    }
+}
+
+async function mostraPlaylistDialog(branoId) {
+    try {
+        const fd = new FormData();
+        fd.append('action', 'get_playlists');
+
+        const res = await fetch('', { method: 'POST', body: fd });
+        const data = await res.json();
+        
+        if (data.status !== 'ok' || !data.playlists.length) {
+            alert('Non hai playlist. Creane una dalla home!');
+            return;
+        }
+
+        let playlistHtml = data.playlists.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+        
+        const dialog = document.createElement('div');
+        dialog.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;';
+        dialog.innerHTML = `
+            <div style="background:white; padding:30px; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.1); max-width:400px; width:90%;">
+                <h3 style="margin-top:0; color:#333;">Seleziona Playlist</h3>
+                <select id="playlist_select" style="padding:10px; border-radius:4px; border:1px solid #ddd; width:100%; cursor:pointer; font-size:14px; margin-bottom:20px;">
+                    <option value="">-- Seleziona una playlist --</option>
+                    ${playlistHtml}
+                </select>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button onclick="this.closest('div').parentElement.remove()" style="padding:10px 20px; border-radius:4px; border:1px solid #ddd; background:#f0f0f0; cursor:pointer;">Annulla</button>
+                    <button onclick="aggiungiPlaylist(${branoId})" style="padding:10px 20px; border-radius:4px; border:none; background:#1db954; color:white; cursor:pointer; font-weight:500;">Aggiungi</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+    } catch (err) {
+        alert('Errore nel caricamento delle playlist');
+    }
+}
+
+async function aggiungiPlaylist(branoId) {
+    const select = document.getElementById('playlist_select');
+    const playlistId = select.value;
+    
+    if (!playlistId) {
+        alert('Seleziona una playlist');
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('action', 'add_to_playlist');
+    fd.append('brano_id', branoId);
+    fd.append('playlist_id', playlistId);
+
+    try {
+        const res = await fetch('', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+            alert('✅ Brano aggiunto alla playlist!');
+            document.querySelector('div[style*="position:fixed"]').remove();
+        } else if (data.status === 'exists') {
+            alert('ℹ️ Brano già presente in questa playlist');
+        } else {
+            alert('❌ Errore nell\'aggiunta');
+        }
+    } catch (err) {
+        alert('❌ Errore: ' + err.message);
     }
 }
 
