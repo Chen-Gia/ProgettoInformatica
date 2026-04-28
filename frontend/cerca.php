@@ -126,9 +126,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CARICA PLAYLIST
     if ($_POST['action'] === 'get_playlists') {
         try {
+            $branoId = (int)$_POST['brano_id'] ?? 0;
             $s = $connessione->prepare("SELECT id, nome FROM playlist WHERE utente_username = ? ORDER BY nome");
             $s->execute([$username]);
             $playlists = $s->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Per ogni playlist, controlla se il brano è già presente
+            foreach ($playlists as &$pl) {
+                $checkStmt = $connessione->prepare("SELECT 1 FROM playlist_brani WHERE playlist_id = ? AND brano_id = ?");
+                $checkStmt->execute([$pl['id'], $branoId]);
+                $pl['has_brano'] = $checkStmt->fetchColumn() !== false;
+            }
+            
             echo json_encode(['status' => 'ok', 'playlists' => $playlists]); exit;
         } catch (PDOException $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); exit;
@@ -442,6 +451,7 @@ async function mostraPlaylistDialog(branoId) {
     try {
         const fd = new FormData();
         fd.append('action', 'get_playlists');
+        fd.append('brano_id', branoId);
 
         const res = await fetch('', { method: 'POST', body: fd });
         const data = await res.json();
@@ -451,56 +461,130 @@ async function mostraPlaylistDialog(branoId) {
             return;
         }
 
-        let playlistHtml = data.playlists.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+        // Crea le opzioni del select, disabilitando le playlist che contengono già il brano
+        let playlistHtml = data.playlists.map(p => {
+            if (p.has_brano) {
+                return `<option value="${p.id}" disabled>✅ ${p.nome} (già aggiunto)</option>`;
+            } else {
+                return `<option value="${p.id}">${p.nome}</option>`;
+            }
+        }).join('');
         
         const dialog = document.createElement('div');
-        dialog.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;';
+        dialog.id = 'playlist-dialog-overlay';
+        dialog.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:9999;';
         dialog.innerHTML = `
-            <div style="background:white; padding:30px; border-radius:10px; box-shadow:0 4px 6px rgba(0,0,0,0.1); max-width:400px; width:90%;">
-                <h3 style="margin-top:0; color:#333;">Seleziona Playlist</h3>
-                <select id="playlist_select" style="padding:10px; border-radius:4px; border:1px solid #ddd; width:100%; cursor:pointer; font-size:14px; margin-bottom:20px;">
-                    <option value="">-- Seleziona una playlist --</option>
+            <div style="background:linear-gradient(135deg, rgba(40,40,40,0.95), rgba(30,30,30,0.95)); padding:30px; border-radius:15px; box-shadow:0 8px 32px rgba(29,185,84,0.3); max-width:450px; width:90%; border:1px solid rgba(29,185,84,0.3);">
+                <h3 style="margin-top:0; margin-bottom:20px; color:#1DB954; font-size:20px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-list"></i> Aggiungi a Playlist
+                </h3>
+                <select id="playlist_select" style="padding:12px; border-radius:8px; border:1px solid rgba(29,185,84,0.5); width:100%; cursor:pointer; font-size:14px; margin-bottom:20px; background:rgba(0,0,0,0.3); color:#fff; transition:all 0.3s ease;">
+                    <option value="" style="background:#222; color:#fff;">-- Seleziona una playlist --</option>
                     ${playlistHtml}
                 </select>
+                <style>
+                    #playlist_select option:disabled {
+                        background: rgba(100,100,100,0.5);
+                        color: #888;
+                    }
+                    #playlist_select option:enabled {
+                        background: #1a1a1a;
+                        color: #fff;
+                    }
+                    #playlist_select:hover {
+                        border-color: #1ed760;
+                        box-shadow: 0 0 15px rgba(29,185,84,0.2);
+                    }
+                    #playlist_select:focus {
+                        outline: none;
+                        border-color: #1DB954;
+                        box-shadow: 0 0 20px rgba(29,185,84,0.4);
+                    }
+                </style>
                 <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button onclick="this.closest('div').parentElement.remove()" style="padding:10px 20px; border-radius:4px; border:1px solid #ddd; background:#f0f0f0; cursor:pointer;">Annulla</button>
-                    <button onclick="aggiungiPlaylist(${branoId})" style="padding:10px 20px; border-radius:4px; border:none; background:#1db954; color:white; cursor:pointer; font-weight:500;">Aggiungi</button>
+                    <button type="button" onclick="chiudiDialog(); return false;" style="padding:10px 20px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(0,0,0,0.3); color:#fff; cursor:pointer; transition:all 0.3s ease;">
+                        <i class="fas fa-times"></i> Annulla
+                    </button>
+                    <button type="button" onclick="aggiungiPlaylist(${branoId}); return false;" style="padding:10px 20px; border-radius:8px; border:none; background:linear-gradient(135deg, #1DB954, #1ed760); color:#000; cursor:pointer; font-weight:600; transition:all 0.3s ease;">
+                        <i class="fas fa-plus"></i> Aggiungi
+                    </button>
                 </div>
             </div>
         `;
         document.body.appendChild(dialog);
+        
+        // Chiudi il dialog se clicchi fuori
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                e.preventDefault();
+                chiudiDialog();
+            }
+        });
+        
+        // Aggiungi anche un handler per il tasto Esc
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                chiudiDialog();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
     } catch (err) {
-        alert('Errore nel caricamento delle playlist');
+        alert('❌ Errore nel caricamento delle playlist');
+    }
+}
+
+function chiudiDialog() {
+    try {
+        const dialog = document.getElementById('playlist-dialog-overlay');
+        if (dialog) {
+            dialog.style.display = 'none';
+            setTimeout(() => {
+                const d = document.getElementById('playlist-dialog-overlay');
+                if (d && d.parentNode) {
+                    d.parentNode.removeChild(d);
+                }
+            }, 100);
+        }
+    } catch (err) {
+        console.error('Errore nella chiusura del dialog:', err);
     }
 }
 
 async function aggiungiPlaylist(branoId) {
-    const select = document.getElementById('playlist_select');
-    const playlistId = select.value;
-    
-    if (!playlistId) {
-        alert('Seleziona una playlist');
-        return;
-    }
-
-    const fd = new FormData();
-    fd.append('action', 'add_to_playlist');
-    fd.append('brano_id', branoId);
-    fd.append('playlist_id', playlistId);
-
     try {
+        const select = document.getElementById('playlist_select');
+        if (!select) {
+            console.error('Select element not found');
+            return;
+        }
+        
+        const playlistId = select.value;
+        
+        if (!playlistId) {
+            alert('Seleziona una playlist');
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('action', 'add_to_playlist');
+        fd.append('brano_id', branoId);
+        fd.append('playlist_id', playlistId);
+
         const res = await fetch('', { method: 'POST', body: fd });
         const data = await res.json();
 
         if (data.status === 'ok') {
             alert('✅ Brano aggiunto alla playlist!');
-            document.querySelector('div[style*="position:fixed"]').remove();
+            chiudiDialog();
         } else if (data.status === 'exists') {
             alert('ℹ️ Brano già presente in questa playlist');
+            chiudiDialog();
         } else {
-            alert('❌ Errore nell\'aggiunta');
+            alert('❌ Errore nell\'aggiunta: ' + (data.message || 'Errore sconosciuto'));
         }
     } catch (err) {
+        console.error('Errore:', err);
         alert('❌ Errore: ' + err.message);
     }
 }
