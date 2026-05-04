@@ -37,6 +37,7 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
 
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -44,58 +45,23 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <!-- SIDEBAR -->
-        <div class="sidebar">
-            <div class="logo">
-                <i class="fas fa-music"></i>
-                <span>Trackly</span>
-            </div>
-
-            <div class="nav-section">
-                <h3>Menu</h3>
-                <ul>
-                    <li><a href="index.php" class="active"><i class="fas fa-home"></i> Home</a></li>
-                    <li><a href="cerca.php"><i class="fas fa-search"></i> Cerca</a></li>
-                    <li><a href="preferiti.php"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
-                    <li><a href="#"><i class="fas fa-list"></i> Coda</a></li>
-                </ul>
-            </div>
-
-            <div class="nav-section">
-                <h3>Playlist</h3>
-                <ul>
-                    <?php foreach ($playlist_utente as $pl): ?>
-                        <li><a href="#"><i class="fas fa-headphones"></i> <?php echo htmlspecialchars($pl['nome']); ?></a></li>
-                    <?php endforeach; ?>
-                    <li><a href="crea_playlist.php"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
-                </ul>
-            </div>
-        </div>
-
+        <?php include 'sidebar.php' ?>
         <!-- MAIN CONTENT -->
         <div class="main-content">
-            <!-- TOP BAR -->
-            <div class="top-bar">
-                <div class="user-section">
-                    <div class="user-info">
-                        <div class="user-avatar"><?php echo strtoupper(substr($username, 0, 1)); ?></div>
-                        <span><?php echo htmlspecialchars($username); ?></span>
-                    </div>
-                    <a href="logout.php" class="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i> Esci
-                    </a>
-                </div>
-            </div>
-
+            <!-- TOPBAR -->
+            <?php include 'topbar.php' ?>
             <!-- CONTENT AREA -->
             <div class="content-area">
                 <!-- HERO SECTION -->
                 <div class="hero">
                     <h1>🎵 Benvenuto in Trackly</h1>
                     <p>Il tuo nuovo modo di scoprire musica straordinaria</p>
-                    <a href="cerca.php" class="hero-btn" style="text-decoration:none; display:inline-block;">Inizia a Esplorare</a>
+                    <a href="cerca.php" class="hero-btn" style="text-decoration:none; display:inline-block;">Inizia a
+                        Esplorare</a>
                 </div>
 
                 <!-- ULTIMI BRANI PREFERITI -->
@@ -150,4 +116,5 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </div>
 </body>
+
 </html>

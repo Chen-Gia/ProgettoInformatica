@@ -1,8 +1,8 @@
 <?php
 require_once "config.php";
 
-$user     = $_POST['username'] ?? '';
-$email    = $_POST['email']    ?? '';
+$user = $_POST['username'] ?? '';
+$email = $_POST['email'] ?? '';
 $password = $_POST['password'] ?? '';
 
 if (empty($user) || empty($email) || empty($password)) {
