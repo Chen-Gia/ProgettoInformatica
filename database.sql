@@ -28,6 +28,8 @@ CREATE TABLE brani (
     artista_id INT,
     album_id INT,
     isrc VARCHAR(15) UNIQUE,
+    artwork_url VARCHAR(500) DEFAULT NULL,
+    preview_url VARCHAR(500) DEFAULT NULL,
     anno YEAR,
     genere VARCHAR(50),
     durata INT,
