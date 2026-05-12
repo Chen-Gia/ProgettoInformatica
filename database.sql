@@ -9,13 +9,18 @@ CREATE TABLE utenti (
 );
 
 CREATE TABLE artisti (
+<<<<<<< HEAD
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     img_url VARCHAR(500) NULL
+=======
+    id_artista INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL
+>>>>>>> f1dbeedb40128537641e95c64eace426506a8d6f
 );
 
 CREATE TABLE album (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_album INT AUTO_INCREMENT PRIMARY KEY,
     titolo VARCHAR(150) NOT NULL,
     artista_id INT,
     anno YEAR,
@@ -25,11 +30,13 @@ CREATE TABLE album (
 );
 
 CREATE TABLE brani (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_brano INT AUTO_INCREMENT PRIMARY KEY,
     titolo VARCHAR(150) NOT NULL,
     artista_id INT,
     album_id INT,
     isrc VARCHAR(15) UNIQUE,
+    artwork_url VARCHAR(500) DEFAULT NULL,
+    preview_url VARCHAR(500) DEFAULT NULL,
     anno YEAR,
     genere VARCHAR(50),
     durata INT,
@@ -40,19 +47,17 @@ CREATE TABLE brani (
 );
 
 CREATE TABLE valutazioni (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_valutazione INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
     brano_id INT,
-    album_id INT,
     voto INT CHECK (voto >= 1 AND voto <= 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
-    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE,
-    FOREIGN KEY (album_id) REFERENCES album(id) ON DELETE CASCADE
+    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
 );
 
 CREATE TABLE preferiti (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_preferito INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
     brano_id INT,
     FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
@@ -60,7 +65,7 @@ CREATE TABLE preferiti (
 );
 
 CREATE TABLE playlist (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_playlist INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
     nome VARCHAR(100),
     FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE
@@ -75,7 +80,7 @@ CREATE TABLE playlist_brani (
 );
 
 CREATE TABLE commenti (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_commento INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
     brano_id INT NOT NULL,
     contenuto TEXT NOT NULL,
