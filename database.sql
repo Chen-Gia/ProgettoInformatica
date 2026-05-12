@@ -10,7 +10,8 @@ CREATE TABLE utenti (
 
 CREATE TABLE artisti (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL
+    nome VARCHAR(100) NOT NULL,
+    img_url VARCHAR(500) NULL
 );
 
 CREATE TABLE album (
@@ -19,6 +20,7 @@ CREATE TABLE album (
     artista_id INT,
     anno YEAR,
     genere VARCHAR(50),
+    img_url VARCHAR(500) NULL,
     FOREIGN KEY (artista_id) REFERENCES artisti(id) ON DELETE SET NULL
 );
 
@@ -31,6 +33,8 @@ CREATE TABLE brani (
     anno YEAR,
     genere VARCHAR(50),
     durata INT,
+    img_url VARCHAR(500) NULL,
+    anteprima_url VARCHAR(500) NULL,
     FOREIGN KEY (artista_id) REFERENCES artisti(id) ON DELETE SET NULL,
     FOREIGN KEY (album_id) REFERENCES album(id) ON DELETE SET NULL
 );

@@ -13,7 +13,7 @@ $livello = $_SESSION['livello'];
 
 // Brani preferiti dell'utente (ultimi 12 = 2 righe)
 $stmt_preferiti = $connessione->prepare("
-    SELECT b.id, b.titolo, b.anno, a.nome as artista
+    SELECT b.id, b.titolo, b.anno, b.genere, b.durata, b.anteprima_url, a.nome as artista
     FROM preferiti p
     JOIN brani b ON p.brano_id = b.id
     JOIN artisti a ON b.artista_id = a.id
@@ -44,6 +44,7 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
     <title>Trackly - Music Streaming</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script><?php include 'card.php'; ?></script>
 </head>
 
 <body>
@@ -68,25 +69,7 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
                 <div class="section-title">
                     <i class="fas fa-heart"></i> Ultimi Brani Preferiti
                 </div>
-                <div class="grid-container">
-                    <?php
-                    if (count($brani_preferiti) > 0) {
-                        foreach ($brani_preferiti as $brano) {
-                            echo "<div class='card'>";
-                            echo "<div class='card-image'><i class='fas fa-music'></i></div>";
-                            echo "<div class='card-title'>" . htmlspecialchars($brano['titolo'] ?? 'Senza titolo') . "</div>";
-                            echo "<div class='card-subtitle'>" . htmlspecialchars($brano['artista'] ?? 'Artista sconosciuto') . "</div>";
-                            echo "<button class='card-action'><i class='fas fa-play'></i> Riproduci</button>";
-                            echo "</div>";
-                        }
-                    } else {
-                        echo "<div class='empty-state' style='grid-column: 1/-1;'>";
-                        echo "<i class='fas fa-heart'></i>";
-                        echo "<p>Non hai ancora brani nei preferiti. <a href='cerca.php'>Aggiungi brani</a>!</p>";
-                        echo "</div>";
-                    }
-                    ?>
-                </div>
+                <div class="grid-container" id="preferiti-home-grid"></div>
 
                 <!-- PLAYLIST UTENTE -->
                 <div class="section-title">
@@ -115,6 +98,25 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
     </div>
+
+<script>
+const braniPreferiti = <?php echo json_encode($brani_preferiti); ?>;
+const grid = document.getElementById('preferiti-home-grid');
+
+if (braniPreferiti.length > 0) {
+    grid.innerHTML = braniPreferiti.map(b => {
+        const durata = b.durata ? parseInt(b.durata) + 's' : 'N/A';
+        return getCardTemplate({...b, durata});
+    }).join('');
+} else {
+    grid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1/-1;">
+            <i class="fas fa-heart"></i>
+            <p>Non hai ancora brani nei preferiti. <a href="cerca.php">Aggiungi brani</a>!</p>
+        </div>
+    `;
+}
+</script>
 </body>
 
 </html>
