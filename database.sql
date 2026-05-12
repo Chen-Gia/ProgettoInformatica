@@ -40,11 +40,11 @@ CREATE TABLE brani (
 CREATE TABLE valutazioni (
     id_valutazione INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
-    album_id INT,
+    brano_id INT,
     voto INT CHECK (voto >= 1 AND voto <= 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
-    FOREIGN KEY (album_id) REFERENCES album(id) ON DELETE CASCADE
+    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
 );
 
 CREATE TABLE preferiti (
