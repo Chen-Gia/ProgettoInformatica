@@ -9,14 +9,9 @@ CREATE TABLE utenti (
 );
 
 CREATE TABLE artisti (
-<<<<<<< HEAD
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     img_url VARCHAR(500) NULL
-=======
-    id_artista INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL
->>>>>>> f1dbeedb40128537641e95c64eace426506a8d6f
 );
 
 CREATE TABLE album (
