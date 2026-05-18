@@ -13,12 +13,12 @@ $livello = $_SESSION['livello'];
 
 // Brani preferiti dell'utente (ultimi 12 = 2 righe)
 $stmt_preferiti = $connessione->prepare("
-    SELECT b.id, b.titolo, b.anno, b.genere, b.durata, b.anteprima_url, a.nome as artista
+    SELECT b.id_brano, b.titolo, b.anno, b.genere, b.durata, b.preview_url, a.nome as artista
     FROM preferiti p
-    JOIN brani b ON p.brano_id = b.id
-    JOIN artisti a ON b.artista_id = a.id
+    JOIN brani b ON p.brano_id = b.id_brano
+    JOIN artisti a ON b.artista_id = a.id_artista
     WHERE p.utente_username = ?
-    ORDER BY p.id DESC
+    ORDER BY p.id_preferito DESC
     LIMIT 12
 ");
 $stmt_preferiti->execute([$username]);
@@ -26,10 +26,10 @@ $brani_preferiti = $stmt_preferiti->fetchAll(PDO::FETCH_ASSOC);
 
 // Playlist dell'utente
 $stmt_playlist = $connessione->prepare("
-    SELECT id, nome
+    SELECT id_playlist, nome
     FROM playlist
     WHERE utente_username = ?
-    ORDER BY id DESC
+    ORDER BY id_playlist DESC
 ");
 $stmt_playlist->execute([$username]);
 $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);

@@ -28,13 +28,13 @@ function salvaFromButton(btn) {
 
 function getCardTemplateLV0(b) {
     const branoData = {
-        titolo:        b.trackName,
-        artista:       b.artistName,
-        anno:          b.releaseDate?.slice(0, 4) ?? '',
-        durata:        Math.round((b.trackTimeMillis ?? 0) / 1000),
-        genere:        b.primaryGenreName ?? '',
-        img_url:       b.artworkUrl100 ?? '',
-        anteprima_url: b.previewUrl ?? ''
+        titolo:      b.trackName,
+        artista:     b.artistName,
+        anno:        b.releaseDate?.slice(0, 4) ?? '',
+        durata:      Math.round((b.trackTimeMillis ?? 0) / 1000),
+        genere:      b.primaryGenreName ?? '',
+        img_url:     b.artworkUrl100 ?? '',
+        preview_url: b.previewUrl ?? ''
     };
     return `<div class="card">
         <div class="card-image">
@@ -83,16 +83,16 @@ function getCardTemplateLV1(b) {
 }
 
 function getCardTemplate(b) {
-    const playButton = b.anteprima_url
-        ? `<audio id="audio_${b.id}" src="${b.anteprima_url}"></audio>
-           <button class="card-action" style="margin-bottom:6px" onclick="togglePreview(${b.id})">
-               <i class="fas fa-play" id="icon_${b.id}"></i> Riproduci
+    const playButton = b.preview_url
+        ? `<audio id="audio_${b.id_brano}" src="${b.preview_url}"></audio>
+           <button class="card-action" style="margin-bottom:6px" onclick="togglePreview(${b.id_brano})">
+               <i class="fas fa-play" id="icon_${b.id_brano}"></i> Riproduci
            </button>`
         : `<button class="card-action" style="margin-bottom:6px; opacity:.5; cursor:not-allowed;">
                <i class="fas fa-play"></i> Riproduci
            </button>`;
 
-    return `<div class="card" id="brano_${b.id}">
+    return `<div class="card" id="brano_${b.id_brano}">
         <div class="card-image"><i class="fas fa-music"></i></div>
         <div class="card-title">${b.titolo ?? 'Senza titolo'}</div>
         <div class="card-subtitle">${b.artista ?? 'Artista sconosciuto'}</div>
@@ -101,10 +101,10 @@ function getCardTemplate(b) {
         </div>
         <br>
         ${playButton}
-        <button class="card-action" style="margin-bottom:6px" onclick="mostraPlaylistDialog(${b.id})">
+        <button class="card-action" style="margin-bottom:6px" onclick="mostraPlaylistDialog(${b.id_brano})">
             <i class="fas fa-list"></i> Aggiungi a Playlist
         </button>
-        <button class="card-action" style="background:#e74c3c; margin-bottom:6px;" onclick="rimuoviPreferito(this, ${b.id})">
+        <button class="card-action" style="background:#e74c3c; margin-bottom:6px;" onclick="rimuoviPreferito(this, ${b.id_brano})">
             <i class="fas fa-trash"></i> Rimuovi
         </button>
     </div>`;

@@ -10,10 +10,10 @@ $username = $_SESSION['username'];
 $livello  = $_SESSION['livello'];
 
 $stmt_playlist = $connessione->prepare("
-    SELECT id, nome
+    SELECT id_playlist, nome
     FROM playlist
     WHERE utente_username = ?
-    ORDER BY id DESC
+    ORDER BY id_playlist DESC
 ");
 $stmt_playlist->execute([$username]);
 $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
@@ -42,10 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $query = '%' . $_POST['query'] . '%';
         try {
             $s = $connessione->prepare("
-                SELECT b.id, b.titolo, b.durata, b.anno, b.genere,
+                SELECT b.id_brano, b.titolo, b.durata, b.anno, b.genere,
                        a.nome as artista
                 FROM brani b
-                JOIN artisti a ON b.artista_id = a.id
+                JOIN artisti a ON b.artista_id = a.id_artista
                 WHERE b.titolo LIKE ? OR a.nome LIKE ?
                 ORDER BY b.titolo
                 LIMIT 50
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $brani = $s->fetchAll(PDO::FETCH_ASSOC);
             $results = array_map(function ($b) {
                 return [
-                    'trackId'          => $b['id'],
+                    'trackId'          => $b['id_brano'],
                     'trackName'        => $b['titolo'],
                     'artistName'       => $b['artista'],
                     'releaseDate'      => $b['anno'] . '-01-01',
@@ -78,21 +78,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $durata = !empty($_POST['durata']) ? (int) $_POST['durata'] : null;
         $genere = !empty($_POST['genere']) ? $_POST['genere']        : null;
         try {
-            $s = $connessione->prepare("SELECT id FROM artisti WHERE nome = ?");
+            $s = $connessione->prepare("SELECT id_artista FROM artisti WHERE nome = ?");
             $s->execute([$artista]);
             $result = $s->fetch(PDO::FETCH_ASSOC);
             if ($result) {
-                $aid = $result['id'];
+                $aid = $result['id_artista'];
             } else {
                 $s = $connessione->prepare("INSERT INTO artisti (nome) VALUES (?)");
                 $s->execute([$artista]);
                 $aid = $connessione->lastInsertId();
             }
-            $s = $connessione->prepare("SELECT id FROM brani WHERE titolo = ? AND artista_id = ?");
+            $s = $connessione->prepare("SELECT id_brano FROM brani WHERE titolo = ? AND artista_id = ?");
             $s->execute([$titolo, $aid]);
             $existingBrano = $s->fetch(PDO::FETCH_ASSOC);
             if ($existingBrano) {
-                echo json_encode(['status' => 'exists', 'brano_id' => $existingBrano['id']]);
+                echo json_encode(['status' => 'exists', 'brano_id' => $existingBrano['id_brano']]);
                 exit;
             }
             $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, anno, durata, genere) VALUES (?, ?, ?, ?, ?)");
@@ -107,12 +107,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === 'get_playlists') {
         try {
             $branoId = (int) ($_POST['brano_id'] ?? 0);
-            $s = $connessione->prepare("SELECT id, nome FROM playlist WHERE utente_username = ? ORDER BY nome");
+            $s = $connessione->prepare("SELECT id_playlist, nome FROM playlist WHERE utente_username = ? ORDER BY nome");
             $s->execute([$username]);
             $playlists = $s->fetchAll(PDO::FETCH_ASSOC);
             foreach ($playlists as &$pl) {
                 $checkStmt = $connessione->prepare("SELECT 1 FROM playlist_brani WHERE playlist_id = ? AND brano_id = ?");
-                $checkStmt->execute([$pl['id'], $branoId]);
+                $checkStmt->execute([$pl['id_playlist'], $branoId]);
                 $pl['has_brano'] = $checkStmt->fetchColumn() !== false;
             }
             echo json_encode(['status' => 'ok', 'playlists' => $playlists]);
@@ -291,8 +291,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 const playlistHtml = data.playlists.map(p =>
                     p.has_brano
-                        ? `<option value="${p.id}" disabled>✅ ${p.nome} (già aggiunto)</option>`
-                        : `<option value="${p.id}">${p.nome}</option>`
+                        ? `<option value="${p.id_playlist}" disabled>✅ ${p.nome} (già aggiunto)</option>`
+                        : `<option value="${p.id_playlist}">${p.nome}</option>`
                 ).join('');
 
                 const dialog = document.createElement('div');

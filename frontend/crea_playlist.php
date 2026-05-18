@@ -13,10 +13,10 @@ $message_type = '';
 
 // Carica le playlist dell'utente per la sidebar
 $stmt_playlist = $connessione->prepare("
-    SELECT id, nome
+    SELECT id_playlist, nome
     FROM playlist
     WHERE utente_username = ?
-    ORDER BY id DESC
+    ORDER BY id_playlist DESC
 ");
 $stmt_playlist->execute([$username]);
 $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
