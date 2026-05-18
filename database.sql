@@ -9,9 +9,8 @@ CREATE TABLE utenti (
 );
 
 CREATE TABLE artisti (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    img_url VARCHAR(500) NULL
+    id_artista INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE album (
@@ -20,8 +19,9 @@ CREATE TABLE album (
     artista_id INT,
     anno YEAR,
     genere VARCHAR(50),
-    img_url VARCHAR(500) NULL,
-    FOREIGN KEY (artista_id) REFERENCES artisti(id) ON DELETE SET NULL
+    FOREIGN KEY (artista_id) 
+        REFERENCES artisti(id_artista) 
+        ON DELETE SET NULL
 );
 
 CREATE TABLE brani (
@@ -35,10 +35,12 @@ CREATE TABLE brani (
     anno YEAR,
     genere VARCHAR(50),
     durata INT,
-    img_url VARCHAR(500) NULL,
-    anteprima_url VARCHAR(500) NULL,
-    FOREIGN KEY (artista_id) REFERENCES artisti(id) ON DELETE SET NULL,
-    FOREIGN KEY (album_id) REFERENCES album(id) ON DELETE SET NULL
+    FOREIGN KEY (artista_id) 
+        REFERENCES artisti(id_artista) 
+        ON DELETE SET NULL,
+    FOREIGN KEY (album_id) 
+        REFERENCES album(id_album) 
+        ON DELETE SET NULL
 );
 
 CREATE TABLE valutazioni (
@@ -47,31 +49,45 @@ CREATE TABLE valutazioni (
     brano_id INT,
     voto INT CHECK (voto >= 1 AND voto <= 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
-    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
+    FOREIGN KEY (utente_username) 
+        REFERENCES utenti(username) 
+        ON DELETE CASCADE,
+    FOREIGN KEY (brano_id) 
+        REFERENCES brani(id_brano) 
+        ON DELETE CASCADE
 );
 
 CREATE TABLE preferiti (
     id_preferito INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
     brano_id INT,
-    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
-    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
+    FOREIGN KEY (utente_username) 
+        REFERENCES utenti(username) 
+        ON DELETE CASCADE,
+    FOREIGN KEY (brano_id) 
+        REFERENCES brani(id_brano) 
+        ON DELETE CASCADE
 );
 
 CREATE TABLE playlist (
     id_playlist INT AUTO_INCREMENT PRIMARY KEY,
     utente_username VARCHAR(50),
     nome VARCHAR(100),
-    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE
+    FOREIGN KEY (utente_username) 
+        REFERENCES utenti(username) 
+        ON DELETE CASCADE
 );
 
 CREATE TABLE playlist_brani (
     playlist_id INT,
     brano_id INT,
     PRIMARY KEY (playlist_id, brano_id),
-    FOREIGN KEY (playlist_id) REFERENCES playlist(id) ON DELETE CASCADE,
-    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
+    FOREIGN KEY (playlist_id) 
+        REFERENCES playlist(id_playlist) 
+        ON DELETE CASCADE,
+    FOREIGN KEY (brano_id) 
+        REFERENCES brani(id_brano) 
+        ON DELETE CASCADE
 );
 
 CREATE TABLE commenti (
@@ -80,6 +96,10 @@ CREATE TABLE commenti (
     brano_id INT NOT NULL,
     contenuto TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (utente_username) REFERENCES utenti(username) ON DELETE CASCADE,
-    FOREIGN KEY (brano_id) REFERENCES brani(id) ON DELETE CASCADE
+    FOREIGN KEY (utente_username) 
+        REFERENCES utenti(username) 
+        ON DELETE CASCADE,
+    FOREIGN KEY (brano_id) 
+        REFERENCES brani(id_brano) 
+        ON DELETE CASCADE
 );
