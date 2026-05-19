@@ -50,7 +50,7 @@ require_once "../backend/config.php";
                 <button type="submit" class="login-btn">Registrati</button>
             </form>
 
-            <p class="register-link">Hai già un account? <a href="index.php">Accedi</a></p>
+            <p class="register-link">Hai già un account? <a href="login.php">Accedi</a></p>
         </div>
     </div>
 </body>
