@@ -19,7 +19,7 @@ if ($preparata1->rowCount() == 0) {
     $sql2 = 'INSERT INTO utenti (username, email, password, livello) VALUES (?, ?, ?, ?)';
     $preparata2 = $connessione->prepare($sql2);
     $preparata2->execute([$user, $email, $hash, $livello]);
-    header('Location: login.php');
+    header('Location: ../frontend/login.php');
     exit;
 
 } else {
@@ -32,7 +32,7 @@ if ($preparata1->rowCount() == 0) {
     } else {
         $_SESSION['esiste_username'] = 1;
     }
-    header('Location: iscrizione.php');
+    header('Location: ../frontend/iscrizione.php');
     exit;
 }
 ?>

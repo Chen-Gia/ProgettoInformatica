@@ -1,5 +1,5 @@
 <?php
-require_once "config.php";
+require_once "../backend/config.php";
 
 // Verificare se l'utente è loggato
 if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
@@ -33,7 +33,7 @@ if (isset($_SESSION['logged']) && $_SESSION['logged'] == 1) {
             }
             ?>
             
-            <form method="POST" action="check_login.php" class="login-form">
+            <form method="POST" action="../backend/check_login.php" class="login-form">
                 <div class="form-group">
                     <label for="username">Utente</label>
                     <input type="text" id="username" name="username" placeholder="Inserisci il tuo username" required>

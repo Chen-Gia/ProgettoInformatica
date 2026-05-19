@@ -23,11 +23,11 @@ if ($credenziali && password_verify($password, $credenziali->password)) {
     $_SESSION['logged'] = 1;
     $_SESSION['username'] = $credenziali->username;
     $_SESSION['livello'] = $credenziali->livello;
-    header('Location: index.php');
+    header('Location: ../frontend/index.php');
     exit;
 } else {
     $_SESSION['errato'] = 1;
-    header('Location: login.php');
+    header('Location: ../frontend/login.php');
     exit;
 }
 ?>

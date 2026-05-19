@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once "../backend/config.php";
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -31,7 +31,7 @@ session_start();
             }
             ?>
 
-            <form method="POST" action="check_iscrizione.php" class="login-form">
+            <form method="POST" action="../backend/check_iscrizione.php" class="login-form">
                 <div class="form-group">
                     <label for="username">Nome utente</label>
                     <input type="text" id="username" name="username" placeholder="Scegli un username" required>

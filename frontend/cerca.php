@@ -1,5 +1,5 @@
 <?php
-require_once "config.php";
+require_once "../backend/config.php";
 
 if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
     header('Location: login.php');
