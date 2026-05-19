@@ -1,13 +1,11 @@
 <?php
 require_once "config.php";
 
-// Verificare se l'utente è loggato
 if (!isset($_SESSION['logged']) || $_SESSION['logged'] != 1) {
     header('Location: login.php');
     exit;
 }
 
-// Query per ottenere dati dal database (adatta in base alle tue tabelle)
 $username = $_SESSION['username'];
 $livello = $_SESSION['livello'];
 
