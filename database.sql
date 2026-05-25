@@ -13,17 +13,6 @@ CREATE TABLE artisti (
     nome VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE album (
-    id_album INT AUTO_INCREMENT PRIMARY KEY,
-    titolo VARCHAR(150) NOT NULL,
-    artista_id INT,
-    anno YEAR,
-    genere VARCHAR(50),
-    FOREIGN KEY (artista_id) 
-        REFERENCES artisti(id_artista) 
-        ON DELETE SET NULL
-);
-
 CREATE TABLE brani (
     id_brano INT AUTO_INCREMENT PRIMARY KEY,
     titolo VARCHAR(150) NOT NULL,
