@@ -79,7 +79,7 @@ $brani_playlist = $stmt_brani->fetchAll(PDO::FETCH_ASSOC);
                             <i class="fas fa-list"></i> <?php echo htmlspecialchars($nome_playlist); ?>
                         </div>
                         <div style="color:#b3b3b3; margin-top:8px; font-size:14px;">
-                            <?php echo count($brani_playlist); ?> brano<?php echo count($brani_playlist) !== 1 ? 'i' : ''; ?>
+                            <?php echo count($brani_playlist); ?> bran<?php echo count($brani_playlist) !== 1 ? 'i' : 'o'; ?>
                         </div>
                     </div>
                     <div style="display:flex; gap:10px;">
