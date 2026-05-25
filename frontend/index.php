@@ -104,7 +104,7 @@ const grid = document.getElementById('preferiti-home-grid');
 if (braniPreferiti.length > 0) {
     grid.innerHTML = braniPreferiti.map(b => {
         const durata = b.durata ? parseInt(b.durata) + 's' : 'N/A';
-        return getCardTemplate({...b, durata});
+        return getCardTemplate({...b, durata}, 'preferiti');
     }).join('');
 } else {
     grid.innerHTML = `

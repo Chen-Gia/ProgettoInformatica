@@ -172,6 +172,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    if ($_POST['action'] === 'remove_from_playlist') {
+        $branoId    = (int) $_POST['brano_id'];
+        $playlistId = (int) $_POST['playlist_id'];
+        try {
+            $s = $connessione->prepare("DELETE FROM playlist_brani WHERE playlist_id = ? AND brano_id = ?");
+            $s->execute([$playlistId, $branoId]);
+            echo json_encode(['status' => 'ok']);
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>

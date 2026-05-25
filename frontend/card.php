@@ -82,7 +82,7 @@ function getCardTemplateLV1(b) {
     </div>`;
 }
 
-function getCardTemplate(b) {
+function getCardTemplate(b, context = 'home') {
     const playButton = b.preview_url
         ? `<audio id="audio_${b.id_brano}" src="${b.preview_url}"></audio>
            <button class="card-action" style="margin-bottom:6px" onclick="togglePreview(${b.id_brano})">
@@ -91,6 +91,17 @@ function getCardTemplate(b) {
         : `<button class="card-action" style="margin-bottom:6px; opacity:.5; cursor:not-allowed;">
                <i class="fas fa-play"></i> Riproduci
            </button>`;
+
+    let removeButton = '';
+    if (context === 'preferiti') {
+        removeButton = `<button class="card-action" style="background:#e74c3c; margin-bottom:6px;" onclick="rimuoviPreferito(this, ${b.id_brano})">
+            <i class="fas fa-trash"></i> Rimuovi dai Preferiti
+        </button>`;
+    } else if (context === 'playlist') {
+        removeButton = `<button class="card-action" style="background:#e74c3c; margin-bottom:6px;" onclick="rimuoviDaPlaylist(this, '${b.id_brano}', playlistId)">
+            <i class="fas fa-trash"></i> Rimuovi dalla Playlist
+        </button>`;
+    }
 
     return `<div class="card" id="brano_${b.id_brano}">
         <div class="card-image">
@@ -108,9 +119,7 @@ function getCardTemplate(b) {
         <button class="card-action" style="margin-bottom:6px" onclick="mostraPlaylistDialog(${b.id_brano})">
             <i class="fas fa-list"></i> Aggiungi a Playlist
         </button>
-        <button class="card-action" style="background:#e74c3c; margin-bottom:6px;" onclick="rimuoviPreferito(this, ${b.id_brano})">
-            <i class="fas fa-trash"></i> Rimuovi
-        </button>
+        ${removeButton}
     </div>`;
 }
 
@@ -286,6 +295,53 @@ async function rimuoviPreferito(btn, branoId) {
                                     <p>Non hai ancora brani nei preferiti.</p>
                                     <a href="cerca.php" class="hero-btn" style="text-decoration:none; display:inline-block; padding:12px 30px; background:#1DB954; color:white; border-radius:8px; font-weight:500;">
                                         <i class="fas fa-search"></i> Inizia a Cercare
+                                    </a>
+                                </div>`;
+                        }
+                    });
+                }, 300);
+            }
+        } else {
+            alert('Errore nella rimozione del brano');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i> Rimuovi';
+        }
+    } catch (err) {
+        alert('Errore: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash"></i> Rimuovi';
+    }
+}
+
+async function rimuoviDaPlaylist(btn, branoId, playlistId) {
+    if (!confirm('Sei sicuro di voler rimuovere questo brano dalla playlist?')) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rimozione...';
+
+    const fd = new FormData();
+    fd.append('action', 'remove_from_playlist');
+    fd.append('brano_id', branoId);
+    fd.append('playlist_id', playlistId);
+
+    try {
+        const res  = await fetch('cerca.php', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.status === 'ok') {
+            const card = document.getElementById('brano_' + branoId);
+            if (card) {
+                card.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => {
+                    card.remove();
+                    // Controlla se ci sono griglie vuote e mostra empty-state
+                    document.querySelectorAll('.grid-container').forEach(grid => {
+                        if (grid.children.length === 0) {
+                            grid.innerHTML = `
+                                <div class="empty-state" style="grid-column: 1/-1;">
+                                    <i class="fas fa-music"></i>
+                                    <p>Questa playlist non contiene brani.</p>
+                                    <a href="cerca.php" class="hero-btn" style="text-decoration:none; display:inline-block; padding:12px 30px; background:#1DB954; color:white; border-radius:8px; font-weight:500;">
+                                        <i class="fas fa-plus"></i> Aggiungi Brani
                                     </a>
                                 </div>`;
                         }

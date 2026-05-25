@@ -17,7 +17,7 @@
                 <h3>Playlist</h3>
                 <ul>
                     <?php foreach ($playlist_utente as $pl): ?>
-                        <li><a href="#"><i class="fas fa-headphones"></i> <?php echo htmlspecialchars($pl['nome']); ?></a></li>
+                        <li><a href="playlist.php?id=<?php echo $pl['id_playlist']; ?>"><i class="fas fa-headphones"></i> <?php echo htmlspecialchars($pl['nome']); ?></a></li>
                     <?php endforeach; ?>
                     <li><a href="crea_playlist.php"><i class="fas fa-plus-circle"></i> Crea Playlist</a></li>
                 </ul>

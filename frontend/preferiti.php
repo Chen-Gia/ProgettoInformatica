@@ -71,7 +71,7 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
 
         if (braniPreferiti.length > 0) {
             grid.innerHTML = braniPreferiti.map(b =>
-                getCardTemplate({ ...b, durata: b.durata ? parseInt(b.durata) + 's' : 'N/A' })
+                getCardTemplate({ ...b, durata: b.durata ? parseInt(b.durata) + 's' : 'N/A' }, 'preferiti')
             ).join('');
         } else {
             grid.innerHTML = `
