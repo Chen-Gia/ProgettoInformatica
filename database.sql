@@ -17,8 +17,6 @@ CREATE TABLE brani (
     id_brano INT AUTO_INCREMENT PRIMARY KEY,
     titolo VARCHAR(150) NOT NULL,
     artista_id INT,
-    album_id INT,
-    isrc VARCHAR(15) UNIQUE,
     artwork_url VARCHAR(500) DEFAULT NULL,
     preview_url VARCHAR(500) DEFAULT NULL,
     anno YEAR,
@@ -26,9 +24,6 @@ CREATE TABLE brani (
     durata INT,
     FOREIGN KEY (artista_id) 
         REFERENCES artisti(id_artista) 
-        ON DELETE SET NULL,
-    FOREIGN KEY (album_id) 
-        REFERENCES album(id_album) 
         ON DELETE SET NULL
 );
 
