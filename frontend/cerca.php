@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $s = $connessione->prepare("
                 SELECT b.id_brano, b.titolo, b.durata, b.anno, b.genere,
-                       a.nome as artista
+                       b.artwork_url, b.preview_url, a.nome as artista
                 FROM brani b
                 JOIN artisti a ON b.artista_id = a.id_artista
                 WHERE b.titolo LIKE ? OR a.nome LIKE ?
@@ -60,7 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'releaseDate'      => $b['anno'] . '-01-01',
                     'primaryGenreName' => $b['genere'],
                     'trackTimeMillis'  => ($b['durata'] ?? 0) * 1000,
-                    'artworkUrl100'    => '',
+                    'artworkUrl100'    => $b['artwork_url'] ?? '',
+                    'previewUrl'       => $b['preview_url'] ?? '',
                     'isFromDB'         => true
                 ];
             }, $brani);
@@ -72,11 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($_POST['action'] === 'save') {
-        $titolo = $_POST['titolo'];
-        $artista = $_POST['artista'];
-        $anno   = !empty($_POST['anno'])   ? (int) $_POST['anno']   : null;
-        $durata = !empty($_POST['durata']) ? (int) $_POST['durata'] : null;
-        $genere = !empty($_POST['genere']) ? $_POST['genere']        : null;
+        $titolo      = $_POST['titolo'];
+        $artista     = $_POST['artista'];
+        $anno        = !empty($_POST['anno'])        ? (int) $_POST['anno']        : null;
+        $durata      = !empty($_POST['durata'])      ? (int) $_POST['durata']      : null;
+        $genere      = !empty($_POST['genere'])      ? $_POST['genere']             : null;
+        $artwork_url = !empty($_POST['img_url'])     ? trim($_POST['img_url'])      : null;
+        $preview_url = !empty($_POST['preview_url']) ? trim($_POST['preview_url'])  : null;
         try {
             $s = $connessione->prepare("SELECT id_artista FROM artisti WHERE nome = ?");
             $s->execute([$artista]);
@@ -92,11 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $s->execute([$titolo, $aid]);
             $existingBrano = $s->fetch(PDO::FETCH_ASSOC);
             if ($existingBrano) {
+                $upd = $connessione->prepare("
+                    UPDATE brani
+                    SET artwork_url = COALESCE(NULLIF(artwork_url,''), ?),
+                        preview_url = COALESCE(NULLIF(preview_url,''), ?)
+                    WHERE id_brano = ?
+                ");
+                $upd->execute([$artwork_url, $preview_url, $existingBrano['id_brano']]);
                 echo json_encode(['status' => 'exists', 'brano_id' => $existingBrano['id_brano']]);
                 exit;
             }
-            $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, anno, durata, genere) VALUES (?, ?, ?, ?, ?)");
-            $s->execute([$titolo, $aid, $anno, $durata, $genere]);
+            $s = $connessione->prepare("INSERT INTO brani (titolo, artista_id, anno, durata, genere, artwork_url, preview_url) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $s->execute([$titolo, $aid, $anno, $durata, $genere, $artwork_url, $preview_url]);
             echo json_encode(['status' => 'ok', 'brano_id' => $connessione->lastInsertId()]);
         } catch (PDOException $e) {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);

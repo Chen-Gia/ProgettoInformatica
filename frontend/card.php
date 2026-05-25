@@ -93,7 +93,11 @@ function getCardTemplate(b) {
            </button>`;
 
     return `<div class="card" id="brano_${b.id_brano}">
-        <div class="card-image"><i class="fas fa-music"></i></div>
+        <div class="card-image">
+            ${b.artwork_url
+                ? `<img src="${b.artwork_url}" alt="${b.titolo ?? 'Brano'}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;">`
+                : `<i class="fas fa-music"></i>`}
+        </div>
         <div class="card-title">${b.titolo ?? 'Senza titolo'}</div>
         <div class="card-subtitle">${b.artista ?? 'Artista sconosciuto'}</div>
         <div class="card-subtitle" style="font-size:11px; opacity:.6">

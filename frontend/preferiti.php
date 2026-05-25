@@ -10,7 +10,7 @@ $username = $_SESSION['username'];
 $livello  = $_SESSION['livello'];
 
 $stmt_preferiti = $connessione->prepare("
-    SELECT b.id_brano, b.titolo, b.durata, b.anno, b.genere, b.preview_url, a.nome as artista
+    SELECT b.id_brano, b.titolo, b.durata, b.anno, b.genere, b.preview_url, b.artwork_url, a.nome as artista
     FROM preferiti p
     JOIN brani b ON p.brano_id = b.id_brano
     JOIN artisti a ON b.artista_id = a.id_artista
