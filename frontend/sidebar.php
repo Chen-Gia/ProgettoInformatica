@@ -10,6 +10,7 @@
                     <li><a href="index.php"><i class="fas fa-home"></i> Home</a></li>
                     <li><a href="cerca.php"><i class="fas fa-search"></i> Cerca</a></li>
                     <li><a href="preferiti.php" class="active"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
+                    <li><a href="valutazioni.php"><i class="fas fa-star"></i> Valutazioni</a></li>
                 </ul>
             </div>
 

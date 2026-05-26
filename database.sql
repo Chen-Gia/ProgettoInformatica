@@ -28,11 +28,11 @@ CREATE TABLE brani (
 );
 
 CREATE TABLE valutazioni (
-    id_valutazione INT AUTO_INCREMENT PRIMARY KEY,
-    utente_username VARCHAR(50),
-    brano_id INT,
-    voto INT CHECK (voto >= 1 AND voto <= 5),
+    utente_username VARCHAR(50) NOT NULL,
+    brano_id INT NOT NULL,
+    voto INT NOT NULL CHECK (voto >= 1 AND voto <= 5),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (utente_username, brano_id),
     FOREIGN KEY (utente_username) 
         REFERENCES utenti(username) 
         ON DELETE CASCADE,
