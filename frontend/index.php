@@ -57,7 +57,7 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
             <div class="content-area">
                 <!-- HERO SECTION -->
                 <div class="hero">
-                    <h1>🎵 Benvenuto in Trackly</h1>
+                    <h1>Benvenuto in Trackly</h1>
                     <p>Il tuo nuovo modo di scoprire musica straordinaria</p>
                     <a href="cerca.php" class="hero-btn" style="text-decoration:none; display:inline-block;">Inizia a
                         Esplorare</a>
@@ -88,7 +88,7 @@ $playlist_utente = $stmt_playlist->fetchAll(PDO::FETCH_ASSOC);
                         echo "<div class='empty-state' style='grid-column: 1/-1; text-align: center;'>";
                         echo "<i class='fas fa-compact-disc' style='font-size: 48px; margin-bottom: 10px; display: block;'></i>";
                         echo "<p>Non hai ancora creato playlist.</p>";
-                        echo "<a href='crea_playlist.php' style='display: inline-block; margin-top: 10px; padding: 10px 20px; background: #1DB954; color: white; border-radius: 8px; text-decoration: none;'>📋 Crea Ora</a>";
+                        echo "<a href='crea_playlist.php' style='display: inline-block; margin-top: 10px; padding: 10px 20px; background: #1DB954; color: white; border-radius: 8px; text-decoration: none;'>Crea Ora</a>";
                         echo "</div>";
                     }
                     ?>

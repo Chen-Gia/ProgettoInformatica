@@ -32,12 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = $connessione->prepare("INSERT INTO playlist (utente_username, nome) VALUES (?, ?)");
             $stmt->execute([$username, $nome]);
-            $message = '✅ Playlist creata con successo!';
+            $message = 'Playlist creata con successo!';
             $message_type = 'success';
             // Reindirizza a index dopo 2 secondi
             header('Refresh: 2; url=index.php');
         } catch (PDOException $e) {
-            $message = '❌ Errore nella creazione della playlist.';
+            $message = 'Errore nella creazione della playlist.';
             $message_type = 'error';
         }
     }

@@ -142,15 +142,15 @@ async function salva(btn, brano) {
             const card = btn.closest('.card');
             const actionsDiv = card.querySelector('[data-track-id]');
 
-            btn.textContent = data.status === 'ok' ? '✅ Aggiunto!' : 'ℹ️ Già presente';
+            btn.textContent = data.status === 'ok' ? 'Aggiunto!' : 'Già presente';
 
             await mostraAzioni(actionsDiv, branoId);
         } else {
-            btn.textContent = '❌ Errore';
+            btn.textContent = 'Errore';
             btn.disabled = false;
         }
     } catch {
-        btn.textContent = '❌ Errore';
+        btn.textContent = 'Errore';
         btn.disabled = false;
     }
 }
@@ -174,17 +174,17 @@ async function aggiungiPreferito(btn, branoId) {
         const res  = await fetch('cerca.php', { method: 'POST', body: fd });
         const data = await res.json();
         if (data.status === 'ok') {
-            btn.textContent = '❤️ Aggiunto ai Preferiti!';
+            btn.textContent = 'Aggiunto ai Preferiti!';
             btn.style.color = '#e74c3c';
         } else if (data.status === 'exists') {
-            btn.textContent = '❤️ Già nei Preferiti';
+            btn.textContent = 'Già nei Preferiti';
             btn.style.color = '#e74c3c';
         } else {
-            btn.textContent = '❌ Errore';
+            btn.textContent = 'Errore';
             btn.disabled = false;
         }
     } catch {
-        btn.textContent = '❌ Errore';
+        btn.textContent = 'Errore';
         btn.disabled = false;
     }
 }
@@ -204,7 +204,7 @@ async function mostraPlaylistDialog(branoId) {
 
         const playlistHtml = data.playlists.map(p =>
             p.has_brano
-                ? `<option value="${p.id_playlist}" disabled>✅ ${p.nome} (già aggiunto)</option>`
+                ? `<option value="${p.id_playlist}" disabled>${p.nome} (già aggiunto)</option>`
                 : `<option value="${p.id_playlist}">${p.nome}</option>`
         ).join('');
 
@@ -236,7 +236,7 @@ async function mostraPlaylistDialog(branoId) {
         document.addEventListener('keydown', handleEsc);
 
     } catch {
-        alert('❌ Errore nel caricamento delle playlist');
+        alert('Errore nel caricamento delle playlist');
     }
 }
 
@@ -258,12 +258,12 @@ async function aggiungiPlaylist(branoId) {
     try {
         const res  = await fetch('cerca.php', { method: 'POST', body: fd });
         const data = await res.json();
-        alert(data.status === 'ok'     ? '✅ Brano aggiunto alla playlist!'
-            : data.status === 'exists' ? 'ℹ️ Brano già presente in questa playlist'
-            : '❌ Errore: ' + (data.message || 'Errore sconosciuto'));
+        alert(data.status === 'ok'     ? 'Brano aggiunto alla playlist!'
+            : data.status === 'exists' ? 'Brano già presente in questa playlist'
+            : 'Errore: ' + (data.message || 'Errore sconosciuto'));
         chiudiDialog();
     } catch (err) {
-        alert('❌ Errore: ' + err.message);
+        alert('Errore: ' + err.message);
     }
 }
 

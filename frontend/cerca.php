@@ -255,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ).join('');
 
             } catch (err) {
-                document.getElementById('risultati').innerHTML = '<p style="color:red;">❌ Errore: ' + err.message + '</p>';
+                document.getElementById('risultati').innerHTML = '<p style="color:red;">Errore: ' + err.message + '</p>';
             }
         }
 
