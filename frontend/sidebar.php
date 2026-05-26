@@ -11,6 +11,7 @@
                     <li><a href="cerca.php"><i class="fas fa-search"></i> Cerca</a></li>
                     <li><a href="preferiti.php" class="active"><i class="fas fa-heart"></i> I Tuoi Mi Piace</a></li>
                     <li><a href="valutazioni.php"><i class="fas fa-star"></i> Valutazioni</a></li>
+                    <li><a href="commenti.php"><i class="fas fa-comments"></i> Commenti</a></li>
                 </ul>
             </div>
 
